@@ -2,6 +2,7 @@
 using airbnb.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using airbnb.Helpers;
 
 namespace airbnb.Controllers
 {
@@ -23,9 +24,13 @@ namespace airbnb.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
+            // Şifreyi hashle
+            string hashedPassword = airbnb.Helpers.PasswordHasher.Hash(password);
+
+            // Hashlenmiş şifre ile kullanıcıyı kontrol et
             var user = await _context.Users
                 .Include(u => u.Role)
-                .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == password);
+                .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == hashedPassword);
 
             if (user == null)
             {
@@ -33,18 +38,20 @@ namespace airbnb.Controllers
                 return View();
             }
 
+            // Session başlat
             HttpContext.Session.SetInt32("UserId", user.UserId);
             HttpContext.Session.SetString("UserName", user.FirstName);
             HttpContext.Session.SetString("UserRole", user.Role.RoleName);
 
-            // Role'a göre yönlendirme
+            // Rol bazlı yönlendirme
             if (user.Role.RoleName == "Admin")
-                return RedirectToAction("Index", "Users");
+                return RedirectToAction("Index", "Home");
             else if (user.Role.RoleName == "Ev Sahibi")
-                return RedirectToAction("Index", "Houses");
+                return RedirectToAction("Index", "Home");
             else
-                return RedirectToAction("Index", "Reservations");
+                return RedirectToAction("Index", "Home");
         }
+
         [HttpGet]
         public IActionResult Register()
         {
@@ -61,7 +68,7 @@ namespace airbnb.Controllers
                 return View();
             }
 
-            // Rol ID’sini al (eğer veritabanında hazır roller varsa)
+            // Rol ID’sini al
             var roleEntity = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == role);
             if (roleEntity == null)
             {
@@ -69,12 +76,15 @@ namespace airbnb.Controllers
                 return View();
             }
 
+            // Şifreyi hashle
+            string hashedPassword = airbnb.Helpers.PasswordHasher.Hash(password);
+
             var newUser = new User
             {
                 FirstName = firstName,
                 LastName = lastName,
                 Email = email,
-                PasswordHash = password,
+                PasswordHash = hashedPassword,
                 RoleId = roleEntity.RoleId,
                 IsActive = true,
                 CreatedAt = DateTime.Now
@@ -85,6 +95,7 @@ namespace airbnb.Controllers
 
             return RedirectToAction("Login");
         }
+
 
         public IActionResult Logout()
         {

@@ -32,7 +32,17 @@
       "launchBrowser": true,
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "profiles": {
+        "airbnb": {
+          "commandName": "Project",
+          "workingDirectory": "C:\\Users\\cidal\\source\\repos\\airbnb\\airbnb",
+          "environmentVariables": {
+            "ASPNETCORE_ENVIRONMENT": "Development"
+          }
+        }
       }
+
     }
   }
 }

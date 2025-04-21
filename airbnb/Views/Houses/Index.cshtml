@@ -1,71 +1,38 @@
 ﻿@model IEnumerable<airbnb.Models.House>
 
 @{
-    ViewData["Title"] = "Index";
+    ViewData["Title"] = "Ev Listesi";
 }
 
-<h1>Index</h1>
+<h2>Ev Listesi</h2>
+<div class="mb-3 text-end">
+    <a asp-action="Create" class="btn btn-success">+ Yeni Ev Ekle</a>
+</div>
 
-<p>
-    <a asp-action="Create">Create New</a>
-</p>
-<table class="table">
-    <thead>
-        <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.Title)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Description)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.PricePerNight)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Location)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsActive)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedAt)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Owner)
-            </th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Title)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Description)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.PricePerNight)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Location)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsActive)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedAt)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Owner.Email)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.HouseId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.HouseId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.HouseId">Delete</a>
-            </td>
-        </tr>
-}
-    </tbody>
-</table>
+<div class="row row-cols-1 row-cols-md-3 g-4">
+    @foreach (var house in Model)
+    {
+        <div class="col">
+            <div class="card h-100 shadow-sm">
+                <img src="@house.ImagePath" class="card-img-top" alt="Ev Görseli" style="object-fit:cover; height:200px;">
+                <div class="card-body">
+                    <h5 class="card-title">@house.Title</h5>
+                    <p class="card-text">@house.Description.Substring(0, Math.Min(house.Description.Length, 100))...</p>
+                    <p><strong>Fiyat:</strong> ₺@house.PricePerNight / gece</p>
+                    <p><strong>Konum:</strong> @house.Location</p>
+                </div>
+               <div class="card-footer d-flex justify-content-center gap-2">
+    <a asp-action="Details" asp-route-id="@house.HouseId" class="btn btn-primary btn-sm">Detaylar</a>
+
+    <a asp-action="Edit" asp-route-id="@house.HouseId" class="btn btn-secondary btn-sm">Düzenle</a>
+
+    <form asp-action="Delete" asp-route-id="@house.HouseId" method="post" class="d-inline">
+        <button type="submit" class="btn btn-danger btn-sm">Sil</button>
+    </form>
+</div>
+
+                
+            </div>
+        </div>
+    }
+</div>

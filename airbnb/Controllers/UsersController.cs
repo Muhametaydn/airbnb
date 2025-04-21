@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using airbnb.Data;
 using airbnb.Models;
+using airbnb.Helpers;
 
 namespace airbnb.Controllers
 {
@@ -57,74 +58,103 @@ namespace airbnb.Controllers
         }
 
         // POST: Users/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("UserId,FirstName,LastName,Email,PasswordHash,RoleId,IsActive,CreatedAt")] User user)
+        public async Task<IActionResult> Create([Bind("UserId,FirstName,LastName,Email,PasswordHash,RoleId,IsActive")] User user)
         {
+            Console.WriteLine("RoleId: " + user.RoleId);
+            Console.WriteLine("Email: " + user.Email);
+
+            user.CreatedAt = DateTime.Now;
+            user.PasswordHash = airbnb.Helpers.PasswordHasher.Hash(user.PasswordHash);
+
             if (ModelState.IsValid)
             {
                 _context.Add(user);
                 await _context.SaveChangesAsync();
+                Console.WriteLine("KAYIT EDİLDİ");
                 return RedirectToAction(nameof(Index));
             }
+
+            Console.WriteLine("ModelState.IsValid = FALSE");
             ViewData["RoleId"] = new SelectList(_context.Roles, "RoleId", "RoleName", user.RoleId);
             return View(user);
         }
+
+
+
+
 
         // GET: Users/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            if (id == null) return NotFound();
 
             var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            if (user == null) return NotFound();
+
             ViewData["RoleId"] = new SelectList(_context.Roles, "RoleId", "RoleName", user.RoleId);
             return View(user);
         }
 
+
+
+
         // POST: Users/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("UserId,FirstName,LastName,Email,PasswordHash,RoleId,IsActive,CreatedAt")] User user)
+        public async Task<IActionResult> Edit(int id, [Bind("UserId,FirstName,LastName,Email,RoleId,IsActive")] User user)
         {
-            if (id != user.UserId)
+            Console.WriteLine("Edit POST çalıştı");
+            Console.WriteLine("RoleId: " + user.RoleId);
+            Console.WriteLine("Email: " + user.Email);
+            Console.WriteLine("ModelState.IsValid = " + ModelState.IsValid);
+
+            foreach (var modelError in ModelState)
             {
-                return NotFound();
+                foreach (var error in modelError.Value.Errors)
+                {
+                    Console.WriteLine($"Hata: {modelError.Key} => {error.ErrorMessage}");
+                }
             }
+            if (id != user.UserId) return NotFound();
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    _context.Update(user);
+                    var existingUser = await _context.Users.FindAsync(id);
+                    if (existingUser == null) return NotFound();
+
+                    existingUser.FirstName = user.FirstName;
+                    existingUser.LastName = user.LastName;
+                    existingUser.Email = user.Email;
+                    existingUser.RoleId = user.RoleId;
+                    existingUser.IsActive = user.IsActive;
+
+                    _context.Update(existingUser);
                     await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!UserExists(user.UserId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    if (!_context.Users.Any(e => e.UserId == user.UserId)) return NotFound();
+                    else throw;
                 }
+
                 return RedirectToAction(nameof(Index));
             }
+
             ViewData["RoleId"] = new SelectList(_context.Roles, "RoleId", "RoleName", user.RoleId);
             return View(user);
         }
+
+
+
+
+
+
+
+
 
         // GET: Users/Delete/5
         public async Task<IActionResult> Delete(int? id)

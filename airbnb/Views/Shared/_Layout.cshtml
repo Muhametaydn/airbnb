@@ -7,10 +7,11 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/airbnb.styles.css" asp-append-version="true" />
-
 </head>
 
-<body>
+<body class="d-flex flex-column min-vh-100">
+    <!-- sayfa boyu en az ekran kadar olsun -->
+
     <header>
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid">
@@ -39,34 +40,33 @@
                                 <a class="nav-link" href="/Account/Login">Giriş Yap</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="/Account/Register">Kayıt Ossl</a>
+                                <a class="nav-link" href="/Account/Register">Kayıt Ol</a>
                             </li>
                         }
                     </ul>
                 </div>
             </div>
         </nav>
-
-
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
+    <main role="main" class="flex-grow-1 container py-4">
+        @RenderBody()
+        <form asp-controller="Houses" asp-action="Index" method="get">
+            <button type="submit" class="btn btn-primary">Evleri Gör</button>
+        </form>
+
+    </main>
+
+    <footer class="bg-dark text-white text-center py-3 mt-auto">
         <div class="container">
-            &copy; 2025 - airbnb - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            <p class="mb-1">&copy; @DateTime.Now.Year Airbnb TinyHouse. Tüm hakları saklıdır.</p>
+            <small>Bu site bir ödev projesidir.</small>
         </div>
     </footer>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
-    @if (Context.Session.GetString("UserName") != null)
-    {
-        <p>Hoş geldin, @Context.Session.GetString("UserName")</p>
-    }
 </body>
 </html>

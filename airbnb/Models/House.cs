@@ -1,5 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace airbnb.Models
 {
@@ -24,12 +26,24 @@ namespace airbnb.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        
+        public string? ImagePath { get; set; }
+
+        [NotMapped]
+        [ValidateNever] // ekstra koruma
+        public IFormFile? ImageFile { get; set; }
+
         public int OwnerId { get; set; }
 
         [ForeignKey("OwnerId")]
+        [ValidateNever]
         public User Owner { get; set; }
 
+
+        [ValidateNever]
         public ICollection<Reservation> Reservations { get; set; }
+
+        [ValidateNever]
         public ICollection<HouseAvailability> Availabilities { get; set; }
     }
 }
