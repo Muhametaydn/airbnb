@@ -18,6 +18,7 @@ namespace airbnb.Data
         public DbSet<Review> Reviews { get; set; }
         public DbSet<HouseAvailability> HouseAvailabilities { get; set; }
 
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

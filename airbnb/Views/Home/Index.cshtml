@@ -1,8 +1,37 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model IEnumerable<airbnb.Models.House>
+
+@{
+    ViewData["Title"] = "Anasayfa";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h2>Aktif Evler</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Şu anda listelenecek aktif ev bulunmamaktadır.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var house in Model)
+        {
+            <div class="col">
+                <a asp-controller="Houses" asp-action="Details" asp-route-id="@house.HouseId"
+                    style="text-decoration: none; color: inherit;">
+
+                    <div class="card h-100 shadow-sm">
+                        <img src="@house.ImagePath" class="card-img-top" alt="Ev Görseli"
+                            style="object-fit: cover; height: 200px;" />
+                        <div class="card-body">
+                            <h5 class="card-title">@house.Title</h5>
+                            <p class="card-text">@house.Description.Substring(0, Math.Min(house.Description.Length, 100))...</p>
+                            <p><strong>Fiyat:</strong> ₺@house.PricePerNight / gece</p>
+                            <p><strong>Konum:</strong> @house.Location</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        }
+
+    </div>
+}

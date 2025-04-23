@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using airbnb.Data;
+﻿using airbnb.Data;
 using airbnb.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace airbnb.Controllers
 {
@@ -19,155 +15,142 @@ namespace airbnb.Controllers
             _context = context;
         }
 
-        // GET: Reservations
-        public async Task<IActionResult> Index()
-        {
-            if (HttpContext.Session.GetInt32("UserId") == null)
-                return RedirectToAction("Login", "Account");
 
-            var applicationDbContext = _context.Reservations.Include(r => r.House).Include(r => r.Tenant);
-            return View(await applicationDbContext.ToListAsync());
+        private int GetCurrentUserId()
+        {
+
+            var userIdClaim = User.FindFirst("UserId");
+            if (userIdClaim == null)
+                throw new Exception("Giriş yapmanız gerekmektedir.");
+            return int.Parse(userIdClaim.Value);
         }
 
-        // GET: Reservations/Details/5
-        public async Task<IActionResult> Details(int? id)
+        // GET: Reservations/Create?houseId=5
+        [HttpGet]
+        public async Task<IActionResult> Create(int houseId)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            var house = await _context.Houses.FindAsync(houseId);
+            if (house == null) return NotFound();
 
+            var reservation = new Reservation
+            {
+                HouseId = houseId,
+                StartDate = DateTime.Today,
+                EndDate = DateTime.Today.AddDays(1)
+            };
+
+            // rezerve edilmiş tarih aralıkları
+            var reservedRanges = await _context.Reservations
+                .Where(r => r.HouseId == houseId && r.Status == "Pending")
+                .Select(r => new { r.StartDate, r.EndDate })
+                .ToListAsync();
+
+            // evin müsaitlik dönemi
+            var availability = await _context.HouseAvailabilities
+                .Where(a => a.HouseId == houseId)
+                .FirstOrDefaultAsync(); // varsayım: tek bir aralık
+
+            ViewData["House"] = house;
+            ViewData["ReservedRanges"] = reservedRanges;
+            ViewData["AvailabilityStart"] = availability?.AvailableFrom.ToString("yyyy-MM-dd");
+            ViewData["AvailabilityEnd"] = availability?.AvailableTo.ToString("yyyy-MM-dd");
+
+            return View(reservation);
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // Kullanıcının kendi rezervasyonlarını listeler
+        public async Task<IActionResult> MyReservations()
+        {
+            var currentUserId = GetCurrentUserId();
+
+            var reservations = await _context.Reservations
+                .Include(r => r.House)
+                .Where(r => r.TenantId == currentUserId)
+                .ToListAsync();
+
+            return View(reservations);
+        }
+        [HttpGet]
+        public async Task<IActionResult> Pay(int id)
+        {
             var reservation = await _context.Reservations
                 .Include(r => r.House)
-                .Include(r => r.Tenant)
-                .FirstOrDefaultAsync(m => m.ReservationId == id);
-            if (reservation == null)
-            {
+                .FirstOrDefaultAsync(r => r.ReservationId == id);
+
+            if (reservation == null || reservation.TenantId != GetCurrentUserId())
                 return NotFound();
-            }
+
+            // Gün sayısını ve toplam fiyatı hesapla
+            int totalDays = (int)(reservation.EndDate - reservation.StartDate).TotalDays;
+            ViewBag.TotalPrice = reservation.House.PricePerNight * totalDays;
 
             return View(reservation);
         }
 
-        // GET: Reservations/Create
-        public IActionResult Create()
-        {
-            ViewData["HouseId"] = new SelectList(_context.Houses, "HouseId", "Description");
-            ViewData["TenantId"] = new SelectList(_context.Users, "UserId", "Email");
-            return View();
-        }
-
-        // POST: Reservations/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("ReservationId,HouseId,TenantId,StartDate,EndDate,Status,CreatedAt")] Reservation reservation)
+        public async Task<IActionResult> PayConfirmed(int id)
         {
-            if (ModelState.IsValid)
-            {
-                _context.Add(reservation);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["HouseId"] = new SelectList(_context.Houses, "HouseId", "Description", reservation.HouseId);
-            ViewData["TenantId"] = new SelectList(_context.Users, "UserId", "Email", reservation.TenantId);
-            return View(reservation);
-        }
-
-        // GET: Reservations/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation == null)
-            {
-                return NotFound();
-            }
-            ViewData["HouseId"] = new SelectList(_context.Houses, "HouseId", "Description", reservation.HouseId);
-            ViewData["TenantId"] = new SelectList(_context.Users, "UserId", "Email", reservation.TenantId);
-            return View(reservation);
-        }
-
-        // POST: Reservations/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("ReservationId,HouseId,TenantId,StartDate,EndDate,Status,CreatedAt")] Reservation reservation)
-        {
-            if (id != reservation.ReservationId)
-            {
-                return NotFound();
-            }
-
-            if (ModelState.IsValid)
-            {
-                try
-                {
-                    _context.Update(reservation);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!ReservationExists(reservation.ReservationId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["HouseId"] = new SelectList(_context.Houses, "HouseId", "Description", reservation.HouseId);
-            ViewData["TenantId"] = new SelectList(_context.Users, "UserId", "Email", reservation.TenantId);
-            return View(reservation);
-        }
-
-        // GET: Reservations/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
             var reservation = await _context.Reservations
                 .Include(r => r.House)
-                .Include(r => r.Tenant)
-                .FirstOrDefaultAsync(m => m.ReservationId == id);
-            if (reservation == null)
-            {
+                .FirstOrDefaultAsync(r => r.ReservationId == id);
+
+            if (reservation == null || reservation.TenantId != GetCurrentUserId())
                 return NotFound();
-            }
 
-            return View(reservation);
+            reservation.Status = "Paid";
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Rezervasyon ve ödeme işlemi başarıyla tamamlandı.";
+            return RedirectToAction("MyReservations");
         }
-
-        // POST: Reservations/Delete/5
-        [HttpPost, ActionName("Delete")]
+        [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> Cancel(int id)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
-            if (reservation != null)
-            {
-                _context.Reservations.Remove(reservation);
-            }
+            var reservation = await _context.Reservations
+                .FirstOrDefaultAsync(r => r.ReservationId == id);
+
+            if (reservation == null)
+                return NotFound();
+
+            var currentUserId = GetCurrentUserId();
+            if (reservation.TenantId != currentUserId)
+                return Forbid();
+
+            // Durum ne olursa olsun iptal et
+            reservation.Status = "Cancelled";
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            // Kullanıcıya mesaj ver
+            if (reservation.Status == "Paid")
+            {
+                TempData["Success"] = "Rezervasyon iptal edildi. İade işleminiz 3 iş günü içinde gerçekleştirilecektir.";
+            }
+            else
+            {
+                TempData["Success"] = "Rezervasyon başarıyla iptal edildi.";
+            }
+
+            return RedirectToAction("MyReservations");
         }
 
-        private bool ReservationExists(int id)
-        {
-            return _context.Reservations.Any(e => e.ReservationId == id);
-        }
+
     }
 }

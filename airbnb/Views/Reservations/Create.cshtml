@@ -1,56 +1,89 @@
 ﻿@model airbnb.Models.Reservation
 
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Rezervasyon Yap";
+    var house = ViewData["House"] as airbnb.Models.House;
+    var reservedRanges = ViewData["ReservedRanges"];
+    var availableFrom = ViewData["AvailabilityStart"] as string;
+    var availableTo = ViewData["AvailabilityEnd"] as string;
 }
 
-<h1>Create</h1>
+<div class="container mt-5">
+    <div class="row">
+        <!-- Ev bilgileri -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <img src="@house.ImagePath" class="card-img-top" style="height: 300px; object-fit: cover;" />
+                <div class="card-body">
+                    <h3 class="card-title">@house.Title</h3>
+                    <p class="card-text">@house.Description</p>
+                    <p><strong>Fiyat:</strong> ₺@house.PricePerNight / gece</p>
+                    <p><strong>Konum:</strong> @house.Location</p>
+                </div>
+            </div>
+        </div>
 
-<h4>Reservation</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <div class="form-group">
-                <label asp-for="HouseId" class="control-label"></label>
-                <select asp-for="HouseId" class ="form-control" asp-items="ViewBag.HouseId"></select>
+        <!-- Rezervasyon formu -->
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title mb-3">Tarih Seç</h4>
+
+                    <form asp-action="StartPayment" asp-controller="Payments" method="post">
+
+
+                        <input type="hidden" asp-for="HouseId" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="StartDate" class="form-label">Başlangıç Tarihi</label>
+                            <input asp-for="StartDate" type="date" class="form-control" id="StartDate"
+                                min="@DateTime.Today.ToString("yyyy-MM-dd")" max="@availableTo" />
+
+                            <span asp-validation-for="StartDate" class="text-danger"></span>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label asp-for="EndDate" class="form-label">Bitiş Tarihi</label>
+                            <input asp-for="EndDate" type="date" class="form-control" id="EndDate"
+                                min="@DateTime.Today.ToString("yyyy-MM-dd")" max="@availableTo" />
+
+                            <span asp-validation-for="EndDate" class="text-danger"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 mt-2">Rezervasyonu Tamamla</button>
+                    </form>
+                </div>
             </div>
-            <div class="form-group">
-                <label asp-for="TenantId" class="control-label"></label>
-                <select asp-for="TenantId" class ="form-control" asp-items="ViewBag.TenantId"></select>
-            </div>
-            <div class="form-group">
-                <label asp-for="StartDate" class="control-label"></label>
-                <input asp-for="StartDate" class="form-control" />
-                <span asp-validation-for="StartDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="EndDate" class="control-label"></label>
-                <input asp-for="EndDate" class="form-control" />
-                <span asp-validation-for="EndDate" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="Status" class="control-label"></label>
-                <input asp-for="Status" class="form-control" />
-                <span asp-validation-for="Status" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <label asp-for="CreatedAt" class="control-label"></label>
-                <input asp-for="CreatedAt" class="form-control" />
-                <span asp-validation-for="CreatedAt" class="text-danger"></span>
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+        </div>
     </div>
 </div>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
-
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        const reservedRanges = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(reservedRanges));
+
+        function disableReservedDates(input) {
+            input.addEventListener('input', () => {
+                const selectedDate = new Date(input.value);
+                for (const range of reservedRanges) {
+                    const start = new Date(range.startDate);
+                    const end = new Date(range.endDate);
+
+                    if (selectedDate >= start && selectedDate < end) {
+                        alert("Bu tarih aralığı zaten rezerve edilmiş. Lütfen başka bir tarih seçin.");
+                        input.value = "";
+                        break;
+                    }
+                }
+            });
+        }
+
+        disableReservedDates(document.getElementById("StartDate"));
+        disableReservedDates(document.getElementById("EndDate"));
+    </script>
 }

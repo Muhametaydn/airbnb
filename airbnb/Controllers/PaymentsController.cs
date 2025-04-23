@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using airbnb.Data;
+﻿using airbnb.Data;
 using airbnb.Models;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace airbnb.Controllers
 {
@@ -19,149 +15,145 @@ namespace airbnb.Controllers
             _context = context;
         }
 
-        // GET: Payments
-        public async Task<IActionResult> Index()
+        private int GetCurrentUserId()
         {
-            if (HttpContext.Session.GetInt32("UserId") == null)
-                return RedirectToAction("Login", "Account");
-
-            var applicationDbContext = _context.Payments.Include(p => p.Reservation);
-            return View(await applicationDbContext.ToListAsync());
+            var userIdClaim = User.FindFirst("UserId");
+            if (userIdClaim == null)
+                throw new Exception("Giriş yapmanız gerekmektedir.");
+            return int.Parse(userIdClaim.Value);
         }
 
-        // GET: Payments/Details/5
-        public async Task<IActionResult> Details(int? id)
+        [HttpGet]
+        public async Task<IActionResult> PayNow(int reservationId)
         {
-            if (id == null)
-            {
-                return NotFound();
-            }
+            var reservation = await _context.Reservations
+                .Include(r => r.House)
+                .FirstOrDefaultAsync(r => r.ReservationId == reservationId);
 
-            var payment = await _context.Payments
-                .Include(p => p.Reservation)
-                .FirstOrDefaultAsync(m => m.PaymentId == id);
-            if (payment == null)
-            {
+            if (reservation == null || reservation.TenantId != GetCurrentUserId())
                 return NotFound();
-            }
 
-            return View(payment);
+            int totalDays = (int)(reservation.EndDate - reservation.StartDate).TotalDays;
+            ViewBag.TotalPrice = reservation.House.PricePerNight * totalDays;
+
+            return View(reservation);
         }
 
-        // GET: Payments/Create
-        public IActionResult Create()
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PayNowConfirmed(int reservationId)
         {
-            ViewData["ReservationId"] = new SelectList(_context.Reservations, "ReservationId", "Status");
+            var reservation = await _context.Reservations
+                .Include(r => r.House)
+                .FirstOrDefaultAsync(r => r.ReservationId == reservationId);
+
+            if (reservation == null || reservation.TenantId != GetCurrentUserId())
+                return NotFound();
+
+            reservation.Status = "Paid";
+            var payment = new Payment
+            {
+                ReservationId = reservation.ReservationId,
+                Amount = reservation.House.PricePerNight * (reservation.EndDate - reservation.StartDate).Days,
+                IsPaid = true,
+                PaymentDate = DateTime.Now
+            };
+
+            _context.Payments.Add(payment);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Ödeme başarıyla tamamlandı.";
+            return RedirectToAction("MyReservations", "Reservations");
+        }
+        // PaymentsController.cs içine ekle
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult StartPayment(int houseId, DateTime startDate, DateTime endDate)
+        {
+            TempData["HouseId"] = houseId;
+            TempData["StartDate"] = startDate.ToString("yyyy-MM-dd");
+            TempData["EndDate"] = endDate.ToString("yyyy-MM-dd");
+
+            return RedirectToAction("PayNowTemp");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> PayNowTemp()
+        {
+            if (TempData["HouseId"] == null || TempData["StartDate"] == null || TempData["EndDate"] == null)
+                return RedirectToAction("Index", "Home");
+
+            int houseId = int.Parse(TempData["HouseId"].ToString());
+            DateTime start = DateTime.Parse(TempData["StartDate"].ToString());
+            DateTime end = DateTime.Parse(TempData["EndDate"].ToString());
+
+            var house = await _context.Houses.FindAsync(houseId);
+            if (house == null) return NotFound();
+
+            ViewBag.House = house;
+            ViewBag.StartDate = start;
+            ViewBag.EndDate = end;
+            ViewBag.TotalPrice = house.PricePerNight * (end - start).Days;
+
             return View();
         }
 
-        // POST: Payments/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("PaymentId,ReservationId,Amount,IsPaid,PaymentDate")] Payment payment)
+        public async Task<IActionResult> CompletePayment(int houseId, DateTime startDate, DateTime endDate)
         {
-            if (ModelState.IsValid)
-            {
-                _context.Add(payment);
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ReservationId"] = new SelectList(_context.Reservations, "ReservationId", "Status", payment.ReservationId);
-            return View(payment);
-        }
+            var userId = GetCurrentUserId();
 
-        // GET: Payments/Edit/5
-        public async Task<IActionResult> Edit(int? id)
-        {
-            if (id == null)
-            {
+            // 1. House çek
+            var house = await _context.Houses.FirstOrDefaultAsync(h => h.HouseId == houseId);
+            if (house == null)
                 return NotFound();
-            }
 
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment == null)
+            // 2. Tarih çakışması var mı kontrol et
+            var overlapping = await _context.Reservations
+                .Where(r => r.HouseId == houseId && r.Status != "Cancelled")
+                .Where(r =>
+                    (startDate >= r.StartDate && startDate < r.EndDate) ||
+                    (endDate > r.StartDate && endDate <= r.EndDate) ||
+                    (startDate <= r.StartDate && endDate >= r.EndDate))
+                .ToListAsync();
+
+            if (overlapping.Any())
             {
-                return NotFound();
+                TempData["Error"] = "Seçilen tarih aralığı bu ev için zaten rezerve edilmiş.";
+                return RedirectToAction("Details", "Houses", new { id = houseId });
             }
-            ViewData["ReservationId"] = new SelectList(_context.Reservations, "ReservationId", "Status", payment.ReservationId);
-            return View(payment);
-        }
 
-        // POST: Payments/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("PaymentId,ReservationId,Amount,IsPaid,PaymentDate")] Payment payment)
-        {
-            if (id != payment.PaymentId)
+            // 3. Rezervasyon oluştur
+            var reservation = new Reservation
             {
-                return NotFound();
-            }
+                HouseId = houseId,
+                StartDate = startDate,
+                EndDate = endDate,
+                TenantId = userId,
+                Status = "Paid",
+                CreatedAt = DateTime.Now
+            };
 
-            if (ModelState.IsValid)
+            _context.Reservations.Add(reservation);
+
+            // 4. Ödeme oluştur
+            var payment = new Payment
             {
-                try
-                {
-                    _context.Update(payment);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PaymentExists(payment.PaymentId))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-                return RedirectToAction(nameof(Index));
-            }
-            ViewData["ReservationId"] = new SelectList(_context.Reservations, "ReservationId", "Status", payment.ReservationId);
-            return View(payment);
-        }
+                Reservation = reservation,
+                Amount = house.PricePerNight * (endDate - startDate).Days,
+                IsPaid = true,
+                PaymentDate = DateTime.Now
+            };
 
-        // GET: Payments/Delete/5
-        public async Task<IActionResult> Delete(int? id)
-        {
-            if (id == null)
-            {
-                return NotFound();
-            }
-
-            var payment = await _context.Payments
-                .Include(p => p.Reservation)
-                .FirstOrDefaultAsync(m => m.PaymentId == id);
-            if (payment == null)
-            {
-                return NotFound();
-            }
-
-            return View(payment);
-        }
-
-        // POST: Payments/Delete/5
-        [HttpPost, ActionName("Delete")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
-        {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment != null)
-            {
-                _context.Payments.Remove(payment);
-            }
-
+            _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+
+            TempData["Success"] = "Ödeme ve rezervasyon başarıyla tamamlandı!";
+            return RedirectToAction("MyReservations", "Reservations");
         }
 
-        private bool PaymentExists(int id)
-        {
-            return _context.Payments.Any(e => e.PaymentId == id);
-        }
+
     }
 }

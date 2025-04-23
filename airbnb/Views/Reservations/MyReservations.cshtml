@@ -1,0 +1,63 @@
+@model IEnumerable<airbnb.Models.Reservation>
+
+@{
+    ViewData["Title"] = "Rezervasyonlarım";
+}
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<div class="row row-cols-1 row-cols-md-2 g-4">
+    @foreach (var r in Model)
+    {
+        <div class="col">
+            <div class="card shadow-sm h-100">
+                <img src="@r.House.ImagePath" class="card-img-top" style="height: 200px; object-fit: cover;" />
+                <div class="card-body">
+                    <h5 class="card-title">@r.House.Title</h5>
+                    <p><strong>Konum:</strong> @r.House.Location</p>
+                    <p><strong>Giriş:</strong> @r.StartDate.ToShortDateString()</p>
+                    <p><strong>Çıkış:</strong> @r.EndDate.ToShortDateString()</p>
+                    <p><strong>Toplam Ücret:</strong> ₺@(r.House.PricePerNight * (r.EndDate - r.StartDate).Days)</p>
+
+                    <p><strong>Durum:</strong>
+                        @if (r.Status == "Paid")
+                        {
+                            <span class="text-success fw-bold">Ödenmiş</span>
+                        }
+                        else if (r.Status == "Pending")
+                        {
+                            <span class="text-warning fw-bold">Ödeme Bekliyor</span>
+                        }
+                        else if (r.Status == "Cancelled")
+                        {
+                            <span class="text-danger fw-bold">İptal Edildi</span>
+
+                            <br />
+                            <small class="text-muted">İade işlemi 3 iş günü içinde yapılır.</small>
+                        }
+                        else
+                        {
+                            <span class="text-muted">@r.Status</span>
+                        }
+                    </p>
+
+                    @if (r.Status == "Pending")
+                    {
+                        <a asp-action="Pay" asp-route-id="@r.ReservationId" class="btn btn-sm btn-warning me-2">Ödeme Yap</a>
+                    }
+
+                    @if (r.Status == "Pending" || r.Status == "Paid")
+                    {
+                        <form asp-action="Cancel" method="post" class="d-inline">
+                            <input type="hidden" name="id" value="@r.ReservationId" />
+                            <button type="submit" class="btn btn-sm btn-danger">İptal Et</button>
+                        </form>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

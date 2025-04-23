@@ -8,9 +8,11 @@ using Microsoft.EntityFrameworkCore;
 using airbnb.Data;
 using airbnb.Models;
 using airbnb.Helpers;
+using Microsoft.AspNetCore.Authorization;
 
 namespace airbnb.Controllers
 {
+    [Authorize(Roles = "Admin")]
     public class UsersController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -23,8 +25,8 @@ namespace airbnb.Controllers
         // GET: Users
         public async Task<IActionResult> Index()
         {
-            if (HttpContext.Session.GetString("UserRole") != "Admin")
-                return RedirectToAction("AccessDenied", "Account");
+
+
 
 
             var applicationDbContext = _context.Users.Include(u => u.Role);

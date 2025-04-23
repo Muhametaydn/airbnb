@@ -3,6 +3,9 @@ using airbnb.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using airbnb.Helpers;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace airbnb.Controllers
 {
@@ -24,10 +27,8 @@ namespace airbnb.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
-            // Şifreyi hashle
-            string hashedPassword = airbnb.Helpers.PasswordHasher.Hash(password);
+            string hashedPassword = PasswordHasher.Hash(password);
 
-            // Hashlenmiş şifre ile kullanıcıyı kontrol et
             var user = await _context.Users
                 .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.Email == email && u.PasswordHash == hashedPassword);
@@ -38,18 +39,22 @@ namespace airbnb.Controllers
                 return View();
             }
 
-            // Session başlat
-            HttpContext.Session.SetInt32("UserId", user.UserId);
-            HttpContext.Session.SetString("UserName", user.FirstName);
-            HttpContext.Session.SetString("UserRole", user.Role.RoleName);
+            // 🔐 CLAIMS EKLE
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.FirstName), // Artık adı görünecek
+                new Claim("Email", user.Email),             // Email'i ayrı bir claim olarak eklersin
 
-            // Rol bazlı yönlendirme
-            if (user.Role.RoleName == "Admin")
-                return RedirectToAction("Index", "Home");
-            else if (user.Role.RoleName == "Ev Sahibi")
-                return RedirectToAction("Index", "Home");
-            else
-                return RedirectToAction("Index", "Home");
+                new Claim("UserId", user.UserId.ToString()),
+                new Claim(ClaimTypes.Role, user.Role.RoleName)
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+            return RedirectToAction("Index", "Home");
         }
 
         [HttpGet]
@@ -61,14 +66,12 @@ namespace airbnb.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(string firstName, string lastName, string email, string password, string role = "Tenant")
         {
-            // Aynı mailden var mı kontrolü
             if (await _context.Users.AnyAsync(u => u.Email == email))
             {
                 ViewBag.Error = "Bu e-posta zaten kayıtlı.";
                 return View();
             }
 
-            // Rol ID’sini al
             var roleEntity = await _context.Roles.FirstOrDefaultAsync(r => r.RoleName == role);
             if (roleEntity == null)
             {
@@ -76,8 +79,7 @@ namespace airbnb.Controllers
                 return View();
             }
 
-            // Şifreyi hashle
-            string hashedPassword = airbnb.Helpers.PasswordHasher.Hash(password);
+            string hashedPassword = PasswordHasher.Hash(password);
 
             var newUser = new User
             {
@@ -93,13 +95,25 @@ namespace airbnb.Controllers
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            return RedirectToAction("Login");
+            // 👇 Kayıttan sonra otomatik login
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, newUser.Email),
+                new Claim("UserId", newUser.UserId.ToString()),
+                new Claim(ClaimTypes.Role, roleEntity.RoleName)
+            };
+
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
+            return RedirectToAction("Index", "Home");
         }
 
-
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            HttpContext.Session.Clear();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Login");
         }
 
@@ -107,6 +121,5 @@ namespace airbnb.Controllers
         {
             return View();
         }
-
     }
 }

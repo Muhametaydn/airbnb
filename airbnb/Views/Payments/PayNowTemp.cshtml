@@ -1,0 +1,31 @@
+@{
+    ViewData["Title"] = "Ödeme Sayfası";
+    var house = ViewBag.House as airbnb.Models.House;
+    var start = (DateTime)ViewBag.StartDate;
+    var end = (DateTime)ViewBag.EndDate;
+    var total = (decimal)ViewBag.TotalPrice;
+}
+
+<h2>@house.Title İçin Ödeme</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card mt-3">
+    <div class="card-body">
+        <p><strong>Konum:</strong> @house.Location</p>
+        <p><strong>Giriş:</strong> @start.ToShortDateString()</p>
+        <p><strong>Çıkış:</strong> @end.ToShortDateString()</p>
+        <p><strong>Toplam:</strong> ₺@total</p>
+
+        <form asp-action="CompletePayment" asp-controller="Payments" method="post">
+
+            <input type="hidden" name="houseId" value="@house.HouseId" />
+            <input type="hidden" name="startDate" value="@start.ToString("yyyy-MM-dd")" />
+            <input type="hidden" name="endDate" value="@end.ToString("yyyy-MM-dd")" />
+            <button type="submit" class="btn btn-success">Ödeme Yap ve Rezervasyonu Oluştur</button>
+        </form>
+    </div>
+</div>

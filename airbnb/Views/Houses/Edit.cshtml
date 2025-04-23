@@ -8,11 +8,12 @@
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Edit">
+        <form asp-action="Edit" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="HouseId" />
-            <input type="hidden" asp-for="OwnerId" /> <!-- Kullanıcıdan gizli ama formla gönderilir -->
-            <input type="hidden" asp-for="CreatedAt" /> <!-- Değişmesin diye gizli gönderdik -->
+            <input type="hidden" asp-for="OwnerId" />
+            <input type="hidden" asp-for="CreatedAt" />
+            <input type="hidden" asp-for="ImagePath" /> <!-- eski fotoğrafı korumak için -->
 
             <div class="form-group">
                 <label asp-for="Title" class="control-label"></label>
@@ -28,7 +29,8 @@
 
             <div class="form-group">
                 <label asp-for="PricePerNight" class="control-label"></label>
-                <input asp-for="PricePerNight" class="form-control" />
+                <input asp-for="PricePerNight" class="form-control" type="text" />
+
                 <span asp-validation-for="PricePerNight" class="text-danger"></span>
             </div>
 
@@ -37,6 +39,20 @@
                 <input asp-for="Location" class="form-control" />
                 <span asp-validation-for="Location" class="text-danger"></span>
             </div>
+
+            <div class="form-group">
+                <label asp-for="ImageFile" class="control-label">Yeni Görsel Yükle (isteğe bağlı)</label>
+                <input asp-for="ImageFile" type="file" class="form-control" />
+                <span asp-validation-for="ImageFile" class="text-danger"></span>
+            </div>
+
+            @if (Model.ImagePath != null)
+            {
+                <div class="mb-3">
+                    <label>Mevcut Görsel:</label><br />
+                    <img src="@Model.ImagePath" style="max-height: 150px; object-fit:cover;" />
+                </div>
+            }
 
             <div class="form-group form-check">
                 <label class="form-check-label">
@@ -57,5 +73,7 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }
