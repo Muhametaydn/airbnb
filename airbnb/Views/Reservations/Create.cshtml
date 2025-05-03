@@ -49,6 +49,9 @@
                                 min="@DateTime.Today.ToString("yyyy-MM-dd")" max="@availableTo" />
 
                             <span asp-validation-for="EndDate" class="text-danger"></span>
+
+                            <span id="dateRangeError" class="text-danger mb-2 d-block"></span>
+
                         </div>
 
                         <button type="submit" class="btn btn-primary w-100 mt-2">Rezervasyonu Tamamla</button>
@@ -66,6 +69,7 @@
 
     <script>
         const reservedRanges = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(reservedRanges));
+        console.log("reservedRanges:", reservedRanges);
 
         function disableReservedDates(input) {
             input.addEventListener('input', () => {
@@ -76,12 +80,43 @@
 
                     if (selectedDate >= start && selectedDate < end) {
                         alert("Bu tarih aralığı zaten rezerve edilmiş. Lütfen başka bir tarih seçin.");
-                        input.value = "";
+                        // input.value = ""; // ← Artık silinmiyor, sadece uyarı veriliyor
                         break;
                     }
                 }
+
+                validateDateRange(); // Her değişimde tarih karşılaştırması da yapılsın
             });
         }
+
+        // Mantık hatasını kontrol eden fonksiyon
+        function validateDateRange() {
+            const startInput = document.getElementById("StartDate");
+            const endInput = document.getElementById("EndDate");
+            const errorSpan = document.getElementById("dateRangeError");
+
+            const startDate = new Date(startInput.value);
+            const endDate = new Date(endInput.value);
+
+            if (startInput.value && endInput.value && startDate > endDate) {
+                errorSpan.innerText = "Başlangıç tarihi, bitiş tarihinden sonra olamaz!";
+                return false;
+            }
+            if (startDate.getTime() === endDate.getTime()) {
+                errorSpan.innerText = "Başlangıç ve bitiş tarihi aynı olamaz!";
+                return false;
+            }
+
+            errorSpan.innerText = "";
+            return true;
+        }
+
+        // Submit kontrolü
+        document.querySelector("form").addEventListener("submit", function (e) {
+            if (!validateDateRange()) {
+                e.preventDefault();
+            }
+        });
 
         disableReservedDates(document.getElementById("StartDate"));
         disableReservedDates(document.getElementById("EndDate"));

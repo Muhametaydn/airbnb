@@ -27,6 +27,12 @@ namespace airbnb.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                ViewBag.Error = "E-posta boş bırakılamaz.";
+                return View();
+            }
+
             string hashedPassword = PasswordHasher.Hash(password);
 
             var user = await _context.Users
@@ -39,15 +45,19 @@ namespace airbnb.Controllers
                 return View();
             }
 
-            // 🔐 CLAIMS EKLE
-            var claims = new List<Claim>
+            if (!user.IsActive)
             {
-                new Claim(ClaimTypes.Name, user.FirstName), // Artık adı görünecek
-                new Claim("Email", user.Email),             // Email'i ayrı bir claim olarak eklersin
+                ViewBag.Error = "Hesabınız pasif durumdadır. Giriş yapamazsınız.";
+                return View();
+            }
 
-                new Claim("UserId", user.UserId.ToString()),
-                new Claim(ClaimTypes.Role, user.Role.RoleName)
-            };
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.Name, user.FirstName),
+        new Claim("Email", user.Email),
+        new Claim("UserId", user.UserId.ToString()),
+        new Claim(ClaimTypes.Role, user.Role.RoleName)
+    };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
@@ -66,6 +76,12 @@ namespace airbnb.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(string firstName, string lastName, string email, string password, string role = "Tenant")
         {
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                ViewBag.Error = "E-posta alanı boş bırakılamaz.";
+                return View();
+            }
+
             if (await _context.Users.AnyAsync(u => u.Email == email))
             {
                 ViewBag.Error = "Bu e-posta zaten kayıtlı.";
@@ -95,13 +111,13 @@ namespace airbnb.Controllers
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
 
-            // 👇 Kayıttan sonra otomatik login
+            // Otomatik login
             var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, newUser.Email),
-                new Claim("UserId", newUser.UserId.ToString()),
-                new Claim(ClaimTypes.Role, roleEntity.RoleName)
-            };
+    {
+        new Claim(ClaimTypes.Name, newUser.Email),
+        new Claim("UserId", newUser.UserId.ToString()),
+        new Claim(ClaimTypes.Role, roleEntity.RoleName)
+    };
 
             var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
             var principal = new ClaimsPrincipal(identity);
@@ -110,6 +126,7 @@ namespace airbnb.Controllers
 
             return RedirectToAction("Index", "Home");
         }
+
 
         public async Task<IActionResult> Logout()
         {

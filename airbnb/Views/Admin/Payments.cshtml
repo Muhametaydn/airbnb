@@ -1,0 +1,30 @@
+@model List<Payment>
+@using System.Globalization
+
+<h2>Ödeme Takibi</h2>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Ödeme ID</th>
+            <th>Kiracı</th>
+            <th>Ev</th>
+            <th>Tutar</th>
+            <th>Durum</th>
+            <th>Tarih</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var payment in Model)
+        {
+            <tr>
+                <td>@payment.PaymentId</td>
+                <td>@payment.Reservation.Tenant.FirstName @payment.Reservation.Tenant.LastName</td>
+                <td>@payment.Reservation.House.Title</td>
+                <td>@payment.Amount.ToString("C", new CultureInfo("tr-TR"))</td>
+                <td>@(payment.IsPaid ? "Ödendi" : "Iade Edildi")</td>
+                <td>@payment.PaymentDate.ToShortDateString()</td>
+            </tr>
+        }
+    </tbody>
+</table>

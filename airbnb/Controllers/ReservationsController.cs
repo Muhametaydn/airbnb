@@ -80,6 +80,7 @@ namespace airbnb.Controllers
 
             var reservations = await _context.Reservations
                 .Include(r => r.House)
+                .Include(r => r.Review)
                 .Where(r => r.TenantId == currentUserId)
                 .ToListAsync();
 
@@ -133,23 +134,28 @@ namespace airbnb.Controllers
             if (reservation.TenantId != currentUserId)
                 return Forbid();
 
-            // Durum ne olursa olsun iptal et
+            // Rezervasyonu iptal et
             reservation.Status = "Cancelled";
+
+            // Ödemeyi de iptal et (varsa)
+            var payment = await _context.Payments
+                .FirstOrDefaultAsync(p => p.ReservationId == reservation.ReservationId);
+
+            if (payment != null)
+            {
+                payment.IsPaid = false;
+            }
 
             await _context.SaveChangesAsync();
 
             // Kullanıcıya mesaj ver
-            if (reservation.Status == "Paid")
-            {
-                TempData["Success"] = "Rezervasyon iptal edildi. İade işleminiz 3 iş günü içinde gerçekleştirilecektir.";
-            }
-            else
-            {
-                TempData["Success"] = "Rezervasyon başarıyla iptal edildi.";
-            }
+            TempData["Success"] = payment != null
+                ? "Rezervasyon iptal edildi. İade işleminiz 3 iş günü içinde gerçekleştirilecektir."
+                : "Rezervasyon başarıyla iptal edildi.";
 
             return RedirectToAction("MyReservations");
         }
+
 
 
     }

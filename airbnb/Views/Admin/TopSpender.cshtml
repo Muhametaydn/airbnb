@@ -1,0 +1,33 @@
+@model airbnb.Models.TopSpenderViewModel
+
+@{
+    ViewData["Title"] = "En Çok Harcayan Kullanıcı";
+}
+
+<h2 class="mt-3">💰 En Çok Harcayan Kullanıcı</h2>
+
+@if (Model == null)
+{
+    <div class="alert alert-info">Henüz hiç rezervasyon yapılmamış.</div>
+}
+else
+{
+    <table class="table table-bordered w-50">
+        <tr>
+            <th>ID</th>
+            <td>@Model.UserId</td>
+        </tr>
+        <tr>
+            <th>Ad Soyad</th>
+            <td>@Model.FirstName @Model.LastName</td>
+        </tr>
+        <tr>
+            <th>Email</th>
+            <td>@Model.Email</td>
+        </tr>
+        <tr>
+            <th>Toplam Harcama</th>
+            <td>₺@Model.TotalSpent</td>
+        </tr>
+    </table>
+}

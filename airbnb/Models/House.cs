@@ -26,7 +26,7 @@ namespace airbnb.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-        
+
         public string? ImagePath { get; set; }
 
         [NotMapped]
@@ -44,6 +44,7 @@ namespace airbnb.Models
         public ICollection<Reservation> Reservations { get; set; }
 
         [ValidateNever]
-        public ICollection<HouseAvailability> Availabilities { get; set; }
+        public ICollection<HouseAvailability> Availabilities { get; set; } = new List<HouseAvailability>();
+
     }
 }

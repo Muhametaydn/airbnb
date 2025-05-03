@@ -18,6 +18,14 @@ namespace airbnb.Data
         public DbSet<Review> Reviews { get; set; }
         public DbSet<HouseAvailability> HouseAvailabilities { get; set; }
 
+        public DbSet<TopReservedHouseViewModel> TopReservedHouseViewModel { get; set; }
+
+        public DbSet<HostStatsViewModel> HostStatsViewModel { get; set; }
+
+        public DbSet<TopSpenderViewModel> TopSpenderViewModel { get; set; }
+        //triggelr
+
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,6 +36,20 @@ namespace airbnb.Data
                 .WithMany(u => u.ReservationsAsTenant) // artık bağlantı var
                 .HasForeignKey(r => r.TenantId)
                 .OnDelete(DeleteBehavior.Restrict); // ❗ Bu satır artık çalışır
+
+
+            // Spler icin
+            modelBuilder.Entity<TopReservedHouseViewModel>().HasNoKey();
+            modelBuilder.Entity<HostStatsViewModel>().HasNoKey();
+
+            //funcklar icin
+            modelBuilder.Entity<TopSpenderViewModel>().HasNoKey();
+
+            //triggerler icin
+
+
+
+
         }
 
     }

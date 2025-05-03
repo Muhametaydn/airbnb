@@ -4,67 +4,91 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<h1>Kullanıcı Listesi</h1>
+
+<div class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input type="text" id="searchInput" class="form-control" placeholder="Ad, Soyad veya E-posta ara">
+    </div>
+    <div class="col-md-3">
+        <select id="roleFilter" class="form-select">
+            <option value="">Tüm Roller</option>
+            <option value="Admin">Admin</option>
+            <option value="Host">Host</option>
+            <option value="Tenant">Kiracı</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select id="activeFilter" class="form-select">
+            <option value="">Tüm Kullanıcılar</option>
+            <option value="true">Aktif</option>
+            <option value="false">Pasif</option>
+        </select>
+    </div>
+</div>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create">Yeni Kullanıcı Ekle</a>
 </p>
-<table class="table">
+
+<table class="table table-bordered">
     <thead>
         <tr>
-            <th>
-                @Html.DisplayNameFor(model => model.FirstName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.LastName)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Email)
-            </th>
-       
-            <th>
-                @Html.DisplayNameFor(model => model.Role)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.IsActive)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.CreatedAt)
-            </th>
+            <th>@Html.DisplayNameFor(model => model.FirstName)</th>
+            <th>@Html.DisplayNameFor(model => model.LastName)</th>
+            <th>@Html.DisplayNameFor(model => model.Email)</th>
+            <th>@Html.DisplayNameFor(model => model.Role)</th>
+            <th>@Html.DisplayNameFor(model => model.IsActive)</th>
+            <th>@Html.DisplayNameFor(model => model.CreatedAt)</th>
             <th></th>
         </tr>
     </thead>
-    <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.FirstName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.LastName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.Email)
-            </td>
-            
-            <td>
-                @Html.DisplayFor(modelItem => item.Role.RoleName)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.IsActive)
-            </td>
-            <td>
-                @Html.DisplayFor(modelItem => item.CreatedAt)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.UserId">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.UserId">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.UserId">Delete</a>
-                    
-                    
-
-            </td>
-        </tr>
-}
+    <tbody id="userTable">
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.FirstName</td>
+                <td>@item.LastName</td>
+                <td>@item.Email</td>
+                <td>@item.Role.RoleName</td>
+                <td>@(item.IsActive ? "true" : "false")</td>
+                <td>@item.CreatedAt</td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.UserId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.UserId">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.UserId">Delete</a>
+                </td>
+            </tr>
+        }
     </tbody>
 </table>
+
+<script>
+    const searchInput = document.getElementById("searchInput");
+    const roleFilter = document.getElementById("roleFilter");
+    const activeFilter = document.getElementById("activeFilter");
+    const rows = document.querySelectorAll("#userTable tr");
+
+    function filterRows() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedRole = roleFilter.value.toLowerCase();
+        const selectedActive = activeFilter.value;
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll("td");
+            const fullText = row.innerText.toLowerCase();
+            const role = cells[3].innerText.toLowerCase();
+            const active = cells[4].innerText;
+
+            const matchesSearch = fullText.includes(searchTerm);
+            const matchesRole = !selectedRole || role === selectedRole;
+            const matchesActive = !selectedActive || active === selectedActive;
+
+            row.style.display = (matchesSearch && matchesRole && matchesActive) ? "" : "none";
+        });
+    }
+
+    searchInput.addEventListener("keyup", filterRows);
+    roleFilter.addEventListener("change", filterRows);
+    activeFilter.addEventListener("change", filterRows);
+</script>

@@ -26,10 +26,29 @@
 
                 <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
                     <ul class="navbar-nav">
+                        @if (User.IsInRole("Host"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" asp-controller="Host" asp-action="Yorumlar">Yorumlarım</a>
+                            </li>
+                        }
+
                         @if (User.Identity.IsAuthenticated && User.FindFirst(ClaimTypes.Role)?.Value == "Tenant")
                         {
                             <li class="nav-item">
                                 <a class="nav-link" href="/Reservations/MyReservations">Rezervasyonlarım</a>
+                            </li>
+                        }
+                        @if (User.Identity.IsAuthenticated && User.FindFirst(ClaimTypes.Role)?.Value == "Admin")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="/Admin/Dashboard">Admin Panel</a>
+                            </li>
+                        }
+                        @if (User.Identity.IsAuthenticated && User.FindFirst(ClaimTypes.Role)?.Value == "Host")
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link" href="/Houses/Index">Evleriniz</a>
                             </li>
                         }
                         @if (User.Identity.IsAuthenticated)

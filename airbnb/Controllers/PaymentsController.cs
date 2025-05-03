@@ -65,7 +65,7 @@ namespace airbnb.Controllers
             TempData["Success"] = "Ödeme başarıyla tamamlandı.";
             return RedirectToAction("MyReservations", "Reservations");
         }
-        // PaymentsController.cs içine ekle
+
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -81,6 +81,7 @@ namespace airbnb.Controllers
         [HttpGet]
         public async Task<IActionResult> PayNowTemp()
         {
+
             if (TempData["HouseId"] == null || TempData["StartDate"] == null || TempData["EndDate"] == null)
                 return RedirectToAction("Index", "Home");
 
@@ -89,6 +90,15 @@ namespace airbnb.Controllers
             DateTime end = DateTime.Parse(TempData["EndDate"].ToString());
 
             var house = await _context.Houses.FindAsync(houseId);
+            var currentUserId = GetCurrentUserId(); // bu metot seni giriş yapan kullanıcının ID'sine götürsün
+            if (house == null)
+                return NotFound();
+
+            if (house.OwnerId == currentUserId)
+            {
+                TempData["Error"] = "Kendi evinizi kiralayamazsınız.";
+                return RedirectToAction("Details", "Houses", new { id = houseId });
+            }
             if (house == null) return NotFound();
 
             ViewBag.House = house;
@@ -109,6 +119,19 @@ namespace airbnb.Controllers
             var house = await _context.Houses.FirstOrDefaultAsync(h => h.HouseId == houseId);
             if (house == null)
                 return NotFound();
+
+            // Müsaitlik kontrolü: Kullanıcının seçtiği tarih bu evin uygun olduğu aralıkta mı?
+            bool isAvailable = await _context.HouseAvailabilities.AnyAsync(a =>
+    a.HouseId == houseId &&
+    startDate >= a.AvailableFrom &&
+    endDate <= a.AvailableTo);
+
+            if (!isAvailable)
+            {
+                TempData["Error"] = "Seçilen tarih aralığında bu ev müsait değil.";
+                return RedirectToAction("Details", "Houses", new { id = houseId });
+            }
+
 
             // 2. Tarih çakışması var mı kontrol et
             var overlapping = await _context.Reservations

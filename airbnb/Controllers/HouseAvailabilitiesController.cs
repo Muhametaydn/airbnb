@@ -22,8 +22,7 @@ namespace airbnb.Controllers
         // GET: HouseAvailabilities
         public async Task<IActionResult> Index()
         {
-            if (HttpContext.Session.GetInt32("UserId") == null)
-                return RedirectToAction("Login", "Account");
+
 
             var applicationDbContext = _context.HouseAvailabilities.Include(h => h.House);
             return View(await applicationDbContext.ToListAsync());
@@ -163,5 +162,50 @@ namespace airbnb.Controllers
         {
             return _context.HouseAvailabilities.Any(e => e.AvailabilityId == id);
         }
+
+        [HttpGet]
+        public IActionResult AddAvailability(int houseId)
+        {
+            ViewBag.HouseId = houseId;
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> AddAvailability(int houseId, DateTime from, DateTime to)
+        {
+            if (from >= to)
+            {
+                ModelState.AddModelError("", "Başlangıç tarihi, bitiş tarihinden önce olmalı.");
+                return View();
+            }
+
+            var availability = new HouseAvailability
+            {
+                HouseId = houseId,
+                AvailableFrom = from,
+                AvailableTo = to
+            };
+
+            _context.HouseAvailabilities.Add(availability);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Uygunluk başarıyla eklendi.";
+            return RedirectToAction("MyHouses", "House"); // kendi evleri listesine yönlendir
+        }
+
+        [HttpPost]
+        public IActionResult DeleteAvailability(int availabilityId)
+        {
+            var availability = _context.HouseAvailabilities.Find(availabilityId);
+            if (availability != null)
+            {
+                _context.HouseAvailabilities.Remove(availability);
+                _context.SaveChanges();
+            }
+
+            // Silinen müsaitliğe ait eve geri dön
+            return RedirectToAction("Index", "Houses");
+        }
+
     }
 }

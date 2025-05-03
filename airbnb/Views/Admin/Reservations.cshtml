@@ -1,0 +1,47 @@
+@model IEnumerable<airbnb.Models.Reservation>
+
+@{
+    ViewData["Title"] = "Rezervasyonlar";
+}
+
+<h2>Rezervasyonlar</h2>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Ev</th>
+            <th>Kiracı</th>
+            <th>Başlangıç</th>
+            <th>Bitiş</th>
+            <th>Durum</th>
+            <th>Odenen Tutar</th>
+            <th>İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var r in Model)
+        {
+            <tr>
+                <td>@r.House.Title</td>
+                <td>@r.Tenant.FirstName @r.Tenant.LastName</td>
+                <td>@r.StartDate.ToShortDateString()</td>
+                <td>@r.EndDate.ToShortDateString()</td>
+                <td>@r.Status</td>
+
+                <td>
+                    @(r.Payment != null && r.Payment.IsPaid ? $"{r.Payment.Amount} ₺" : "0 ₺")
+                </td>
+
+                <td>
+                    @if (r.Status != "Cancelled")
+                    {
+                        <form asp-action="AdminCancelReservation" method="post" style="display:inline">
+                            <input type="hidden" name="id" value="@r.ReservationId" />
+                            <button type="submit" class="btn btn-sm btn-danger">İptal Et</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

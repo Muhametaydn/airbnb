@@ -3,6 +3,25 @@
 @{
     ViewData["Title"] = "Anasayfa";
 }
+@if (ViewBag.PopulerEvler != null)
+{
+    <hr />
+    <h3 class="mt-5">📈 En Çok Rezerve Edilen Evler</h3>
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var ev in ViewBag.PopulerEvler as List<airbnb.Models.TopReservedHouseViewModel>)
+        {
+            <div class="col">
+                <div class="card h-100 border-success shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-success">@ev.Title</h5>
+                        <p class="card-text">Toplam @ev.ReservationCount rezervasyon</p>
+                        <a class="btn btn-sm btn-outline-success" asp-controller="Houses" asp-action="Details" asp-route-id="@ev.HouseId">İncele</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
 
 <h2>Aktif Evler</h2>
 
@@ -27,6 +46,22 @@ else
                             <p class="card-text">@house.Description.Substring(0, Math.Min(house.Description.Length, 100))...</p>
                             <p><strong>Fiyat:</strong> ₺@house.PricePerNight / gece</p>
                             <p><strong>Konum:</strong> @house.Location</p>
+                            <p>@{
+    var yorumlar = house.Reservations
+        .Where(r => r.Review != null)
+        .Select(r => r.Review)
+        .ToList();
+
+    var ortalama = yorumlar.Any()
+        ? yorumlar.Average(r => r.Rating)
+        : 0;
+}
+
+@if (yorumlar.Any())
+{
+    <p class="text-warning fw-bold mt-2">⭐ @ortalama.ToString("0.0") / 5</p>
+}
+</p>
                         </div>
                     </div>
                 </a>

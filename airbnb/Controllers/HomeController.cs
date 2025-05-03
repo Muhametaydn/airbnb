@@ -23,10 +23,22 @@ namespace airbnb.Controllers
             var activeHouses = await _context.Houses
                 .Where(h => h.IsActive)
                 .Include(h => h.Owner)
+                .Include(h => h.Reservations)         // Rezervasyonları dahil et
+                    .ThenInclude(r => r.Review)       // Her rezervasyonun yorumlarını da dahil et
                 .ToListAsync();
+
+            var populerEvler = _context.TopReservedHouseViewModel
+    .FromSqlRaw("EXEC sp_GetTop5ReservedHouses")
+    .ToList();
+
+            ViewBag.PopulerEvler = populerEvler;
+
+
+
 
             return View(activeHouses);
         }
+
 
         public IActionResult Privacy()
         {
@@ -38,5 +50,7 @@ namespace airbnb.Controllers
         {
             return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
         }
+
+
     }
 }

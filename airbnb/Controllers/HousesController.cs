@@ -57,8 +57,11 @@ namespace airbnb.Controllers
                 return NotFound();
 
             var house = await _context.Houses
-                .Include(h => h.Owner)
-                .FirstOrDefaultAsync(h => h.HouseId == id);
+    .Include(h => h.Owner)
+    .Include(h => h.Reservations)
+        .ThenInclude(r => r.Review)
+    .FirstOrDefaultAsync(h => h.HouseId == id);
+
 
             if (house == null)
                 return NotFound();
@@ -147,7 +150,11 @@ namespace airbnb.Controllers
         // GET: Houses/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            var house = await _context.Houses.FindAsync(id);
+            var house = await _context.Houses
+     .Include(h => h.Availabilities)
+     .FirstOrDefaultAsync(h => h.HouseId == id);
+
+
             if (house == null)
                 return NotFound();
 
@@ -246,5 +253,31 @@ namespace airbnb.Controllers
         {
             return _context.Houses.Any(e => e.HouseId == id);
         }
+        [HttpPost]
+        public async Task<IActionResult> AddAvailability(int houseId, DateTime from, DateTime to)
+        {
+            if (from >= to)
+            {
+                TempData["Error"] = "Geçersiz tarih aralığı.";
+                return RedirectToAction("Edit", new { id = houseId });
+            }
+
+            var availability = new HouseAvailability
+            {
+                HouseId = houseId,
+                AvailableFrom = from,
+                AvailableTo = to
+            };
+
+            _context.HouseAvailabilities.Add(availability);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Müsaitlik eklendi.";
+            return RedirectToAction("Edit", new { id = houseId });
+        }
+
+
+
+
     }
 }

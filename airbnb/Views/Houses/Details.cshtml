@@ -54,4 +54,33 @@
     {
         <div class="alert alert-success">Bu ev tamamen müsait! Hemen kiralayabilirsin.</div>
     }
+    @{
+        var yorumlar = Model.Reservations
+        .Where(r => r.Review != null)
+        .Select(r => r.Review)
+        .ToList();
+
+        var ortalamaPuan = yorumlar.Any() ? yorumlar.Average(y => y.Rating) : 0;
+    }
+
+    <h5 class="mt-4">Kullanıcı Yorumları</h5>
+
+    @if (yorumlar.Any())
+    {
+        <p class="fw-bold text-warning">Ortalama Puan: ⭐ @ortalamaPuan.ToString("0.0") / 5</p>
+
+        @foreach (var yorum in yorumlar)
+        {
+            <div class="border rounded p-2 mb-2 bg-light">
+                <span class="text-warning">⭐ @yorum.Rating / 5</span>
+                <p class="mb-0">@yorum.Comment</p>
+                <small class="text-muted">@yorum.CreatedAt.ToShortDateString()</small>
+            </div>
+        }
+    }
+    else
+    {
+        <p class="text-muted">Bu ev hakkında henüz yorum yapılmamış.</p>
+    }
+
 </div>

@@ -4,9 +4,14 @@
     ViewData["Title"] = "Ev Listesi";
 }
 
-<h2>Ev Listesi</h2>
+<h2>Ev Listeniz</h2>
 <div class="mb-3 text-end">
     <a asp-action="Create" class="btn btn-success">+ Yeni Ev Ekle</a>
+</div>
+<div class="mb-3 text-end">
+    <a asp-controller="Host" asp-action="HostStats" class="btn btn-outline-primary">
+        📊 Ev İstatistiklerim
+    </a>
 </div>
 
 <div class="row row-cols-1 row-cols-md-3 g-4">
@@ -21,17 +26,17 @@
                     <p><strong>Fiyat:</strong> ₺@house.PricePerNight / gece</p>
                     <p><strong>Konum:</strong> @house.Location</p>
                 </div>
-               <div class="card-footer d-flex justify-content-center gap-2">
-    <a asp-action="Details" asp-route-id="@house.HouseId" class="btn btn-primary btn-sm">Detaylar</a>
+                <div class="card-footer d-flex justify-content-center gap-2">
+                    <a asp-action="Details" asp-route-id="@house.HouseId" class="btn btn-primary btn-sm">Detaylar</a>
 
-    <a asp-action="Edit" asp-route-id="@house.HouseId" class="btn btn-secondary btn-sm">Düzenle</a>
+                    <a asp-action="Edit" asp-route-id="@house.HouseId" class="btn btn-secondary btn-sm">Düzenle</a>
 
-    <form asp-action="Delete" asp-route-id="@house.HouseId" method="post" class="d-inline">
-        <button type="submit" class="btn btn-danger btn-sm">Sil</button>
-    </form>
-</div>
+                    <form asp-action="Delete" asp-route-id="@house.HouseId" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-danger btn-sm">Sil</button>
+                    </form>
+                </div>
 
-                
+
             </div>
         </div>
     }

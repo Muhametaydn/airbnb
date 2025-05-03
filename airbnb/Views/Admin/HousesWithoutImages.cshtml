@@ -1,0 +1,43 @@
+@model List<airbnb.Models.House>
+
+@{
+    ViewData["Title"] = "Görseli Olmayan Evler";
+    var count = ViewBag.MissingImageCount as int? ?? 0;
+}
+
+<h2>🖼 Görseli Olmayan Evler</h2>
+<h3 class="text-danger">Eksik Görselli Ev Sayısı: <strong>@count</strong></h3>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-success">Tüm evlerin görseli var ✅</div>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Başlık</th>
+                <th>Konum</th>
+                <th>Fiyat</th>
+                <th>Düzenle</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var house in Model)
+            {
+                <tr>
+                    <td>@house.Title</td>
+                    <td>@house.Location</td>
+                    <td>₺@house.PricePerNight</td>
+                    <td>
+                        <a asp-controller="Admin" asp-action="DeleteHouse" asp-route-id="@house.HouseId"
+                            class="btn btn-sm btn-danger">
+                            Evi Sil
+                        </a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

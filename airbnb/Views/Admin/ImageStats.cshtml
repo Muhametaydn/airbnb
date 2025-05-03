@@ -1,0 +1,11 @@
+@{
+    ViewData["Title"] = "Eksik Görsel İstatistikleri";
+    var count = ViewBag.MissingImageCount as int? ?? 0;
+}
+
+<h3>🖼 Görseli Eksik Ev Sayısı: <span class="text-danger">@count</span></h3>
+
+@if (count > 0)
+{
+    <a asp-action="HousesWithoutImages" class="btn btn-sm btn-outline-warning">Detayları Gör</a>
+}

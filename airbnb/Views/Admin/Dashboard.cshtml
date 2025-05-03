@@ -1,0 +1,161 @@
+@model AdminDashboardViewModel
+
+<h2 class="mb-4">Admin Paneli</h2>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- SOL MENÜ -->
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="/Admin/Dashboard" class="list-group-item list-group-item-action active">
+                    📊 Genel Bakış
+                </a>
+                <a href="/Users/Index" class="list-group-item list-group-item-action">
+                    👤 Kullanıcı Yönetimi
+                </a>
+                <a href="/Admin/ListHouses" class="list-group-item list-group-item-action">
+                    🏠 İlan Yönetimi
+                </a>
+                <a href="/Admin/Reservations" class="list-group-item list-group-item-action">
+                    📅 Rezervasyonlar
+                </a>
+                <a href="/Admin/Payments" class="list-group-item list-group-item-action">
+                    💳 Ödeme Takibi
+                </a>
+                <a href="/Admin/HousesWithoutImages" class="list-group-item list-group-item-action">
+                    🖼 Eksik Görselli Evler
+                </a>
+                <a href="/Admin/TopSpender" class="list-group-item list-group-item-action">
+                    💸 En Çok Harcayan Kullanıcı
+                </a>
+            </div>
+
+        </div>
+
+        <!-- ANA İÇERİK -->
+        <div class="col-md-9">
+            <h3 class="mb-4">Genel İstatistikler</h3>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-white bg-primary mb-3">
+                        <div class="card-header">Kullanıcı Sayısı</div>
+                        <div class="card-body">
+                            <h5 class="card-title">@Model.TotalUsers</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card text-white bg-success mb-3">
+                        <div class="card-header">İlan Sayısı</div>
+                        <div class="card-body">
+                            <h5 class="card-title">@Model.TotalHouses</h5>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card text-white bg-warning mb-3">
+                        <div class="card-header">Rezervasyon Sayısı</div>
+                        <div class="card-body">
+                            <h5 class="card-title">@Model.TotalReservations</h5>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card text-white bg-danger mb-3">
+                        <div class="card-header">Ödeme Durumları</div>
+                        <div class="card-body">
+                            <h5 class="card-title">Toplam Ödeme: @Model.TotalPayments ₺</h5>
+                            <p class="card-text mb-1">İptal Edilen: @Model.CancelledPayments ₺</p>
+                            <p class="card-text">Kar: @Model.Profit ₺</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card mt-4">
+                        <div class="card-header">Kullanıcı Durumu</div>
+                        <div class="card-body">
+                            <canvas id="userStatusChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card mt-4">
+                        <div class="card-header">Günlük Rezervasyon Sayısı</div>
+                        <div class="card-body">
+                            <canvas id="dailyReservationChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+
+        </div>
+    </div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<script>
+    const activeUsers = @ViewBag.ActiveUsers;
+    const totalUsers = @Model.TotalUsers;
+    const passiveUsers = totalUsers - activeUsers;
+
+    new Chart(document.getElementById('userStatusChart').getContext('2d'), {
+        type: 'pie',
+        data: {
+            labels: ['Aktif Kullanıcı', 'Pasif Kullanıcı'],
+            datasets: [{
+                data: [activeUsers, passiveUsers],
+                backgroundColor: ['#28a745', '#dc3545']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+</script>
+<script>
+    const reservationLabels = @Html.Raw(Json.Serialize(ViewBag.ReservationDates));
+    const reservationData = @Html.Raw(Json.Serialize(ViewBag.ReservationCounts));
+
+    new Chart(document.getElementById('dailyReservationChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: reservationLabels,
+            datasets: [{
+                label: 'Günlük Rezervasyon',
+                data: reservationData,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                fill: true,
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { precision: 0 }
+                }
+            }
+        }
+    });
+</script>

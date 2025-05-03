@@ -1,0 +1,52 @@
+@model IEnumerable<airbnb.Models.House>
+
+@{
+    ViewData["Title"] = "İlan Yönetimi";
+}
+
+<h2>İlan Yönetimi</h2>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Başlık</th>
+            <th>Fiyat (₺)</th>
+            <th>Konum</th>
+            <th>Ev Sahibi</th>
+            <th>Durum</th>
+            <th>İşlemler</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var house in Model)
+        {
+            <tr>
+                <td>@house.Title</td>
+                <td>@house.PricePerNight</td>
+                <td>@house.Location</td>
+                <td>@house.Owner.FirstName @house.Owner.LastName</td>
+                <td>
+                    @(house.IsActive ? "Aktif" : "Pasif")
+                </td>
+                <td>
+                    <a class="btn btn-sm btn-warning" asp-action="EditHouse" asp-controller="Admin"
+                        asp-route-id="@house.HouseId">Düzenle</a>
+
+
+                    @if (house.IsActive)
+                    {
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="ToggleStatus" asp-controller="Admin"
+                            asp-route-id="@house.HouseId">Pasif Yap</a>
+                    }
+                    else
+                    {
+                        <a class="btn btn-sm btn-success" asp-action="ToggleStatus" asp-controller="Admin"
+                            asp-route-id="@house.HouseId">Aktif Yap</a>
+                    }
+                    <a class="btn btn-sm btn-danger" asp-action="DeleteHouse" asp-controller="Admin"
+                        asp-route-id="@house.HouseId">Sil</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

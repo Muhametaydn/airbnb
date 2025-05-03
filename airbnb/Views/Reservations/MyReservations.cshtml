@@ -8,22 +8,27 @@
 {
     <div class="alert alert-success">@TempData["Success"]</div>
 }
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
 
-<div class="row row-cols-1 row-cols-md-2 g-4">
+<div class="row row-cols-1 row-cols-md-3 g-3">
     @foreach (var r in Model)
     {
         <div class="col">
-            <div class="card shadow-sm h-100">
-                <img src="@r.House.ImagePath" class="card-img-top" style="height: 200px; object-fit: cover;" />
-                <div class="card-body">
-                    <h5 class="card-title">@r.House.Title</h5>
-                    <p><strong>Konum:</strong> @r.House.Location</p>
-                    <p><strong>Giriş:</strong> @r.StartDate.ToShortDateString()</p>
-                    <p><strong>Çıkış:</strong> @r.EndDate.ToShortDateString()</p>
-                    <p><strong>Toplam Ücret:</strong> ₺@(r.House.PricePerNight * (r.EndDate - r.StartDate).Days)</p>
+            <div class="card h-100 shadow-sm">
+                <img src="@r.House.ImagePath" class="card-img-top" style="height: 150px; object-fit: cover;" />
+                <div class="card-body py-2 px-3">
+                    <h6 class="card-title mb-2">@r.House.Title</h6>
+                    <p class="mb-1"><strong>Konum:</strong> @r.House.Location</p>
+                    <p class="mb-1"><strong>Giriş:</strong> @r.StartDate.ToShortDateString()</p>
+                    <p class="mb-1"><strong>Çıkış:</strong> @r.EndDate.ToShortDateString()</p>
+                    <p class="mb-1"><strong>Toplam Ücret:</strong> ₺@(r.House.PricePerNight * (r.EndDate -
+                                            r.StartDate).Days)</p>
 
-                    <p><strong>Durum:</strong>
-                        @if (r.Status == "Paid")
+                <p class="mb-2"><strong>Durum:</strong>
+                    @if (r.Status == "Paid")
                         {
                             <span class="text-success fw-bold">Ödenmiş</span>
                         }
@@ -34,7 +39,6 @@
                         else if (r.Status == "Cancelled")
                         {
                             <span class="text-danger fw-bold">İptal Edildi</span>
-
                             <br />
                             <small class="text-muted">İade işlemi 3 iş günü içinde yapılır.</small>
                         }
@@ -44,18 +48,55 @@
                         }
                     </p>
 
-                    @if (r.Status == "Pending")
-                    {
-                        <a asp-action="Pay" asp-route-id="@r.ReservationId" class="btn btn-sm btn-warning me-2">Ödeme Yap</a>
-                    }
+                    <div class="d-flex gap-2">
+                        @if (r.Status == "Pending")
+                        {
+                            <a asp-action="Pay" asp-route-id="@r.ReservationId" class="btn btn-sm btn-outline-warning">Ödeme
+                                Yap</a>
+                        }
 
-                    @if (r.Status == "Pending" || r.Status == "Paid")
-                    {
-                        <form asp-action="Cancel" method="post" class="d-inline">
-                            <input type="hidden" name="id" value="@r.ReservationId" />
-                            <button type="submit" class="btn btn-sm btn-danger">İptal Et</button>
-                        </form>
-                    }
+                        @* Sadece tarihi geçmemiş olanlar iptal edilebilsin *@
+                        @if ((r.Status == "Pending" || r.Status == "Paid") && r.EndDate >= DateTime.Now)
+                        {
+                            <form asp-action="Cancel" method="post" class="d-inline">
+                                <input type="hidden" name="id" value="@r.ReservationId" />
+                                <button type="submit" class="btn btn-sm btn-outline-danger">İptal Et</button>
+                            </form>
+                        }
+                    </div>
+
+                    @* Rezervasyon geçmişse ve durum "Paid" ise yorum yapılabilir *@
+                    @if (r.EndDate < DateTime.Now && r.Status == "Paid")
+{
+    if (r.Review == null)
+    {
+        <!-- Yorum Formu -->
+        <form asp-controller="Reviews" asp-action="AddReview" method="post" class="mt-3">
+            <input type="hidden" name="reservationId" value="@r.ReservationId" />
+            <label class="form-label">Puan:</label>
+            <select name="rating" class="form-control" required>
+                @for (int i = 1; i <= 5; i++)
+                {
+                    <option value="@i">@i</option>
+                }
+            </select>
+            <label class="form-label mt-2">Yorum:</label>
+            <textarea name="comment" class="form-control" required></textarea>
+            <button type="submit" class="btn btn-sm btn-primary mt-2">Yorum Yap</button>
+        </form>
+    }
+    else
+    {
+        <!-- Yapılan yorumu göster -->
+        <div class="mt-3 p-2 border rounded bg-light">
+            <strong>Yaptığınız Yorum:</strong><br />
+            <span class="text-warning">⭐ @r.Review.Rating / 5</span><br />
+            <p class="mb-0">@r.Review.Comment</p>
+            <small class="text-muted">(@r.Review.CreatedAt.ToShortDateString())</small>
+        </div>
+    }
+}
+
                 </div>
             </div>
         </div>

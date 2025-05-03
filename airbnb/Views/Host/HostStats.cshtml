@@ -1,0 +1,8 @@
+@model airbnb.Models.HostStatsViewModel
+
+<h3>📊 Ev Sahibi İstatistikleri</h3>
+<ul class="list-group">
+    <li class="list-group-item">Toplam Rezervasyon: @Model.TotalReservations</li>
+    <li class="list-group-item">Toplam Kazanç: ₺@Model.TotalEarnings</li>
+    <li class="list-group-item">En Çok Rezerve Edilen Ev: @Model.MostReservedHouse</li>
+</ul>

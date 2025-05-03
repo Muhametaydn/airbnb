@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using airbnb.Data;
 using airbnb.Models;
+using System.Security.Claims;
 
 namespace airbnb.Controllers
 {
@@ -163,5 +164,47 @@ namespace airbnb.Controllers
         {
             return _context.Reviews.Any(e => e.ReviewId == id);
         }
+
+        public async Task<IActionResult> AddReview(int reservationId, int rating, string comment)
+        {
+            // Giriş yapan kullanıcıyı al
+            var userId = int.Parse(User.FindFirstValue("UserId"));
+
+            // Rezervasyon gerçekten bu kullanıcıya mı ait?
+            var reservation = await _context.Reservations
+                .Include(r => r.House)
+                .FirstOrDefaultAsync(r => r.ReservationId == reservationId && r.TenantId == userId);
+
+            if (reservation == null)
+            {
+                return Unauthorized(); // Başkasının rezervasyonuna yorum yapılmasını engelle
+            }
+
+            // Aynı rezervasyon için yorum yapıldıysa tekrar yapılmasın
+            bool alreadyReviewed = await _context.Reviews.AnyAsync(r => r.ReservationId == reservationId);
+            if (alreadyReviewed)
+            {
+                TempData["Error"] = "Bu rezervasyon için zaten yorum yaptınız.";
+                return RedirectToAction("MyReservations", "Reservations");
+            }
+
+            var review = new Review
+            {
+                ReservationId = reservationId,
+                Rating = rating,
+                Comment = comment,
+                CreatedAt = DateTime.Now
+            };
+
+            _context.Reviews.Add(review);
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "Yorumunuz eklendi.";
+            return RedirectToAction("MyReservations", "Reservations");
+        }
+
+
+
+
     }
 }

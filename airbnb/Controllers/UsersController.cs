@@ -26,9 +26,6 @@ namespace airbnb.Controllers
         public async Task<IActionResult> Index()
         {
 
-
-
-
             var applicationDbContext = _context.Users.Include(u => u.Role);
             return View(await applicationDbContext.ToListAsync());
         }
