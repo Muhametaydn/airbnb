@@ -1,0 +1,28 @@
+@model IEnumerable<HousePriceChangeLog>
+@{
+    ViewData["Title"] = "Ev Fiyat Değişim Logları";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Ev ID</th>
+            <th>Eski Fiyat</th>
+            <th>Yeni Fiyat</th>
+            <th>Tarih</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var log in Model)
+        {
+            <tr>
+                <td>@log.HouseId</td>
+                <td>@log.OldPrice ₺</td>
+                <td>@log.NewPrice ₺</td>
+                <td>@log.ChangedAt.ToString("g")</td>
+            </tr>
+        }
+    </tbody>
+</table>

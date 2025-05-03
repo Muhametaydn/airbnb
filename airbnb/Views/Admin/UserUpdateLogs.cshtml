@@ -1,0 +1,28 @@
+@model IEnumerable<UserUpdateLog>
+@{
+    ViewData["Title"] = "Kullanıcı Güncelleme Logları";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>User ID</th>
+            <th>Ad (Eski → Yeni)</th>
+            <th>Soyad (Eski → Yeni)</th>
+            <th>Tarih</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var log in Model)
+        {
+            <tr>
+                <td>@log.UserId</td>
+                <td>@log.OldFirstName → @log.NewFirstName</td>
+                <td>@log.OldLastName → @log.NewLastName</td>
+                <td>@log.UpdatedAt.ToString("g")</td>
+            </tr>
+        }
+    </tbody>
+</table>

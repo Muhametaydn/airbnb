@@ -226,7 +226,22 @@ public class AdminController : Controller
         return View();
     }
 
+    public IActionResult UserUpdateLogs()
+    {
+        var logs = _context.UserUpdateLogs
+            .OrderByDescending(x => x.UpdatedAt)
+            .ToList();
+        return View(logs);
+    }
 
+    // Ev fiyat değişim logları
+    public IActionResult HousePriceLogs()
+    {
+        var logs = _context.HousePriceChangeLogs
+            .OrderByDescending(x => x.ChangedAt)
+            .ToList();
+        return View(logs);
+    }
 
 
 

@@ -24,6 +24,8 @@ namespace airbnb.Data
 
         public DbSet<TopSpenderViewModel> TopSpenderViewModel { get; set; }
         //triggelr
+        public DbSet<UserUpdateLog> UserUpdateLogs { get; set; }
+        public DbSet<HousePriceChangeLog> HousePriceChangeLogs { get; set; }
 
 
 
@@ -46,6 +48,15 @@ namespace airbnb.Data
             modelBuilder.Entity<TopSpenderViewModel>().HasNoKey();
 
             //triggerler icin
+            modelBuilder.Entity<User>()
+                   .ToTable("Users", tb => tb.HasTrigger("trg_LogUserUpdate"));
+
+            modelBuilder.Entity<House>()
+                    .ToTable("Houses", tb => tb.HasTrigger("trg_HousePriceUpdateLog"));
+
+
+
+
 
 
 
